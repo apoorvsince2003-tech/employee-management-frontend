@@ -48,8 +48,8 @@ export default function DepartmentDetail() {
         if (!active || !dept) return;
         setDepartment(dept);
         const [empList, teamList, projectList] = await Promise.all([
-          employeeService.byDepartment(dept.id),
-          teamService.byDepartment(dept.id),
+          employeeService.byDepartment(String(dept.id)),
+teamService.byDepartment(String(dept.id)),
           projectService.list(),
         ]);
         if (!active) return;

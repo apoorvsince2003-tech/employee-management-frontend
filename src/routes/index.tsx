@@ -39,6 +39,7 @@ const Settings = lazy(() => import('@/pages/Settings'));
 const Profile = lazy(() => import('@/pages/Profile'));
 const Security = lazy(() => import('@/pages/Security'));
 const HelpSupport = lazy(() => import("@/pages/HelpSupport"));
+const DepartmentForm = lazy(() => import('@/pages/DepartmentForm'));
 
 function withSuspense(node: React.ReactNode, label = 'Loading…') {
   return <Suspense fallback={<LoadingState label={label} />}>{node}</Suspense>;
@@ -70,6 +71,8 @@ export const routes: RouteObject[] = [
       { path: 'projects/new', element: withSuspense(<ProjectForm />, 'Loading...') },
 
       { path: 'departments', element: withSuspense(<Departments />, 'Loading departments…') },
+
+      { path: 'departments/new', element: withSuspense(<DepartmentForm />, 'Loading department form...') },
       { path: 'departments/:id', element: withSuspense(<DepartmentDetail />, 'Loading department…') },
 
       { path: 'teams', element: withSuspense(<Teams />, 'Loading teams…') },
