@@ -115,13 +115,18 @@ export default function NoticeForm() {
           required
         />
 
-        <input
-          name="category"
-          placeholder="Category"
-          value={form.category}
-          onChange={handleChange}
-          className="w-full rounded-lg border p-3"
-        />
+        <select
+            name="category"
+            value={form.category}
+            onChange={handleChange}
+            className="w-full rounded-lg border p-3"
+>
+  <option value="Announcement">Announcement</option>
+  <option value="Policy">Policy</option>
+  <option value="Event">Event</option>
+  <option value="Urgent">Urgent</option>
+  <option value="General">General</option>
+</select>
 
         <input
           name="author"

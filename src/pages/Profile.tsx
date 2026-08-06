@@ -1,4 +1,4 @@
-import { useState } from 'react';
+import { useEffect, useState } from "react";
 import { motion } from 'framer-motion';
 import {
   User,
@@ -14,8 +14,6 @@ import {
   Github,
   Pencil,
   Camera,
-  Shield,
-  Settings as SettingsIcon,
   Download,
   Cake,
   Flag,
@@ -29,6 +27,7 @@ import { Card, CardHeader, Button, Badge, Avatar } from '@/components/ui';
 import { Tabs } from '@/components/ui/Tabs';
 import { Modal } from '@/components/ui/Modal';
 import { cn, formatDate } from '@/utils';
+import { profileService } from "@/services";
 
 type TabId = 'personal' | 'work' | 'contact';
 
@@ -96,16 +95,56 @@ export default function Profile() {
   const [editOpen, setEditOpen] = useState(false);
   const [editDraft, setEditDraft] = useState<ProfileData>(initialProfile);
   const [avatarKey, setAvatarKey] = useState(0);
+  useEffect(() => {
+  profileService
+    .getProfile()
+    .then((data) => {
+      setProfile(data);
+      setEditDraft(data);
+    })
+    .catch(() => {
+      console.log("No profile found");
+    });
+}, []);
 
   function openEdit() {
     setEditDraft(profile);
     setEditOpen(true);
   }
 
-  function saveEdit() {
+  async function saveEdit() {
+    console.log("Save button clicked");
+  try {
+    await profileService.updateProfile(editDraft);
+
     setProfile(editDraft);
+
     setEditOpen(false);
+
+  } catch {
+
+    try {
+
+      await profileService.createProfile(editDraft);
+
+      setProfile(editDraft);
+
+      setEditOpen(false);
+
+    } catch {
+
+      alert("Failed to save profile");
+
+    }
+
   }
+  console.log(editDraft);
+  localStorage.setItem(
+  "profileName",
+  `${editDraft.firstName} ${editDraft.lastName}`
+);
+console.log(localStorage.getItem("profileName"));
+}
 
   function handleAvatarChange() {
     setAvatarKey((k) => k + 1);

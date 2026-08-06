@@ -17,7 +17,7 @@ export default function TeamForm() {
   const [description, setDescription] = useState('');
   const [departmentId, setDepartmentId] = useState('');
   const [leadId, setLeadId] = useState('');
-  const [projectId, setProjectId] = useState('');
+  const [projectId, setProjectId] = useState<string | null>(null);
   const [memberCount, setMemberCount] = useState(0);
 
   const [departments, setDepartments] = useState<Department[]>([]);
@@ -45,7 +45,7 @@ export default function TeamForm() {
 
   async function handleSubmit(e: React.FormEvent) {
     e.preventDefault();
-    if (!name.trim() || !departmentId || !leadId || !projectId) {
+    if (!name.trim() || !departmentId || !leadId) {
       toast.error('Please fill all required fields');
       return;
     }
@@ -56,7 +56,6 @@ export default function TeamForm() {
         description,
         departmentId,
         leadId,
-        projectId,
         memberCount,
       });
       toast.success('Team created successfully');
@@ -95,13 +94,6 @@ export default function TeamForm() {
           ))}
         </select>
 
-        <select className="w-full border rounded p-2"
-          value={projectId} onChange={e=>setProjectId(e.target.value)}>
-          <option value="">Select Project</option>
-          {projects.map(p=>(
-            <option key={p.id} value={p.id}>{p.name}</option>
-          ))}
-        </select>
 
         <input type="number" className="w-full border rounded p-2"
           value={memberCount}

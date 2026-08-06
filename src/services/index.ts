@@ -15,3 +15,4 @@ export * from './holidayService';
 export * from './noticeService';
 export * from './activityService';
 export * from './dashboardService';
+export * from "./profileService";

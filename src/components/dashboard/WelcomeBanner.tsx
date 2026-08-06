@@ -5,8 +5,10 @@ import { quickActions } from '@/routes/navItems';
 import { APP_CONFIG } from '@/constants';
 import { formatDate } from '@/utils';
 
+
 export function WelcomeBanner() {
-  const today = formatDate(new Date(), 'long');
+
+  const today = formatDate(new Date(), "long");
 
   return (
     <motion.div
@@ -31,7 +33,7 @@ export function WelcomeBanner() {
         <div className="max-w-xl">
           <p className="text-sm font-medium text-mint-300">{today}</p>
           <h1 className="mt-2 font-display text-2xl font-bold text-brand-secondary sm:text-3xl">
-            Welcome back, Alex
+            Welcome back, {localStorage.getItem("profileName") || "Alex"}
           </h1>
           <p className="mt-2 text-sm text-mint-200/80 sm:text-base">
             {APP_CONFIG.tagline}

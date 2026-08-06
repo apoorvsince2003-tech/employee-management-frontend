@@ -139,12 +139,13 @@ export interface Promotion {
 }
 
 export interface Holiday {
-  id: string;
-  name: string;
-  date: string;
-  type: 'National' | 'Company' | 'Regional';
+  id: number;
+
+  holidayName: string;
+
+  holidayDate: string;
+
   description: string;
-  isOptional: boolean;
 }
 
 export interface Notice {

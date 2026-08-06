@@ -1,11 +1,23 @@
 import { useNavigate } from 'react-router-dom';
 import { LogOut, Settings, User, ChevronDown, LifeBuoy, Shield } from 'lucide-react';
 import { Dropdown, DropdownItem, DropdownSeparator, DropdownLabel, Avatar } from '@/components/ui';
+import { useEffect, useState } from "react";
+import { profileService } from "@/services";
 
 export function UserProfileDropdown() {
   const navigate = useNavigate();
-  const name = 'Alex Morgan';
-  const role = 'HR Administrator';
+  const [name, setName] = useState("Alex Morgan");
+const [role, setRole] = useState("HR Administrator");
+
+useEffect(() => {
+  profileService
+    .getProfile()
+    .then((profile) => {
+      setName(`${profile.firstName} ${profile.lastName}`);
+      setRole(profile.designation);
+    })
+    .catch(() => {});
+}, []);
 
   return (
     <Dropdown

@@ -29,56 +29,44 @@ export interface SalaryTotals {
 export const salaryService = {
   list: async (): Promise<SalaryRecord[]> => {
 
-  const data = await apiClient.get<any[]>("/employees");
+  const data = await apiClient.get<any[]>("/payroll");
 
   return data.map((item) => ({
-
     id: String(item.id),
 
     employeeId: String(item.id),
 
-    employeeName: item.firstName + " " + item.lastName,
+employeeName: item.employeeName,
 
-    designation: item.designation,
+designation: "-",
 
-    departmentName: item.departmentName,
+departmentName: "-",
 
-    baseSalary: item.salary,
+    baseSalary: item.basicSalary,
 
-    bonus: 0,
+    bonus: item.bonus,
 
-    deductions: 0,
+    deductions: item.deduction,
 
-    netSalary: item.salary,
+    netSalary: item.netSalary,
 
-    payPeriod: "2026-08",
+    payPeriod: item.payPeriod,
 
-    status: "Paid",
-
+    status: item.status,
   }));
-
 },
 
-    trend: async () => {
-  return [];
-},
+   trend: () =>
+  apiClient.get<PayrollTrendPoint[]>("/payroll/trend"),
 
-totals: async () => {
-  return {
-    monthlyPayroll: 0,
-    headcount: 0,
-    averageSalary: 0,
-    bonusPool: 0,
-  };
-},
+totals: () =>
+  apiClient.get<SalaryTotals>("/payroll/totals"),
 
-bands: async () => {
-  return [];
-},
+bands: () =>
+  apiClient.get<SalaryBand[]>("/payroll/bands"),
 
-revisions: async () => {
-  return [];
-},
+revisions: () =>
+  apiClient.get<SalaryRevision[]>("/payroll/revisions"),
 
   //byDepartment: () => apiClient.get<SalaryByDepartment[]>('/salary/by-department'),
 

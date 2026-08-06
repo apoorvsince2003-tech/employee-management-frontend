@@ -57,10 +57,20 @@ export default function SalaryManagement() {
   setLoading(true);
   setError(null);
 
-  salaryService
-    .list()
-    .then((data) => {
-      setRecords(data);
+  Promise.all([
+    salaryService.list(),
+    salaryService.trend(),
+    salaryService.totals(),
+    salaryService.bands(),
+    salaryService.revisions(),
+  ])
+    .then(([records, trend, totals, bands, revisions]) => {
+      setRecords(records);
+      setPayroll(trend);
+      setTotals(totals);
+      setBands(bands);
+      setRevisions(revisions);
+
       setLoading(false);
     })
     .catch((err) => {
@@ -90,13 +100,23 @@ export default function SalaryManagement() {
       />
 
       <Tabs
-        items={[
-  {
-    id: 'records' as TabId,
-    label: 'Salary Records',
-    icon: <DollarSign size={15} />,
-  },
-]}
+  items={[
+    {
+      id: "overview" as TabId,
+      label: "Overview",
+      icon: <TrendingUp size={15} />,
+    },
+    {
+      id: "records" as TabId,
+      label: "Salary Records",
+      icon: <DollarSign size={15} />,
+    },
+    {
+      id: "revisions" as TabId,
+      label: "Revisions",
+      icon: <Users size={15} />,
+    },
+  ]}
         value={tab}
         onChange={(v) => setTab(v as TabId)}
       />
@@ -107,7 +127,22 @@ export default function SalaryManagement() {
   animate={{ opacity: 1, y: 0 }}
   transition={{ duration: 0.25 }}
 >
-  <RecordsTab records={records} />
+  {tab === "overview" && totals && (
+    <OverviewTab
+      totals={totals}
+      payroll={payroll}
+      bands={bands}
+      byDepartment={byDepartment}
+    />
+  )}
+
+  {tab === "records" && (
+    <RecordsTab records={records} />
+  )}
+
+  {tab === "revisions" && (
+    <RevisionsTab revisions={revisions} />
+  )}
 </motion.div>
     </div>
   );

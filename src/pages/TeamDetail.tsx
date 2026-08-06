@@ -1,5 +1,5 @@
 import { useEffect, useState } from 'react';
-import { useParams, Link } from 'react-router-dom';
+import { useParams, Link, useNavigate } from 'react-router-dom';
 import {
   Users,
   Building2,
@@ -7,6 +7,8 @@ import {
   User,
   ArrowUpRight,
   Plus,
+  Pencil,
+  Trash2,
 } from 'lucide-react';
 import toast from 'react-hot-toast';
 import { teamService, employeeService, projectService, departmentService } from '@/services';
@@ -20,6 +22,7 @@ import { EmployeeCard } from '@/components/cards/EmployeeCard';
 import { ProjectCard } from '@/components/cards/ProjectCard';
 
 export default function TeamDetail() {
+  const navigate = useNavigate();
   const { id } = useParams<{ id: string }>();
   const [team, setTeam] = useState<Team | null>(null);
   const [members, setMembers] = useState<Employee[]>([]);
@@ -84,19 +87,67 @@ export default function TeamDetail() {
         backLabel="Back to teams"
         badges={
           <>
-            <Badge tone="primary">{team.departmentName}</Badge>
+            <Badge tone="primary">{team.departmentName ?? "-"}</Badge>
             <Badge tone="accent">{team.memberCount} members</Badge>
           </>
         }
         meta={
           <>
-            <MetaItem icon={<Building2 size={14} />} label={team.departmentName} />
-            <MetaItem icon={<User size={14} />} label={team.leadName} />
-            <MetaItem icon={<FolderKanban size={14} />} label={team.projectName} />
+            <MetaItem
+  icon={<Building2 size={14} />}
+  label={team.departmentName ?? "-"}
+/>
+            <MetaItem
+  icon={<User size={14} />}
+  label={team.leadName ?? "-"}
+/>
+            <MetaItem
+  icon={<FolderKanban size={14} />}
+  label={team.projectName ?? "-"}
+/>
           </>
         }
         avatar={false}
-        actions={<Button size="sm" leftIcon={<Plus size={15} />} onClick={() => toast('Add member form — coming soon')}>Add Member</Button>}
+        actions={
+  <div className="flex gap-2">
+
+    <Button
+      size="sm"
+      leftIcon={<Pencil size={15} />}
+      onClick={() => navigate(`/teams/edit/${team.id}`)}
+    >
+      Edit
+    </Button>
+
+    <Button
+      size="sm"
+      variant="danger"
+      leftIcon={<Trash2 size={15} />}
+      onClick={async () => {
+
+        if (!window.confirm("Delete this team?")) return;
+
+        try {
+
+          await teamService.remove(String(team.id));
+
+          toast.success("Team Deleted");
+
+          navigate("/teams");
+
+        } catch {
+
+          toast.error("Delete Failed");
+
+        }
+
+      }}
+    >
+      Delete
+    </Button>
+
+  </div>
+}
       >
         <div className="mt-5 grid grid-cols-2 gap-3 sm:grid-cols-3">
           <TeamStat icon={<Users size={16} />} label="Members" value={String(members.length)} />

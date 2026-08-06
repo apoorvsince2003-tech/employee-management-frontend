@@ -2,13 +2,8 @@ import { useEffect, useMemo, useState } from "react";
 import toast from "react-hot-toast";
 import { Badge } from "@/components/ui";
 
-import {
-  CalendarDays,
-  CheckCircle,
-  Clock3,
-  UserCheck,
-  Plus,
-} from "lucide-react";
+import { CalendarDays, CheckCircle, Clock3, UserCheck, Plus,} from "lucide-react";
+import { useNavigate } from "react-router-dom";
 
 import { leaveService } from "@/services";
 import type { LeaveRequest } from "@/types";
@@ -30,6 +25,7 @@ import {
 } from "@/components/shared/FilterBar";
 
 export default function LeaveManagement() {
+  const navigate = useNavigate();
 
   const [leaves, setLeaves] = useState<LeaveRequest[]>([]);
 
@@ -143,15 +139,11 @@ export default function LeaveManagement() {
 
         actions={
           <Button
-            leftIcon={<Plus size={16} />}
-            onClick={() =>
-              toast.success(
-                "Leave Modal Part-3 me banega"
-              )
-            }
-          >
-            Apply Leave
-          </Button>
+  leftIcon={<Plus size={16} />}
+  onClick={() => navigate("/leaves/new")}
+>
+  Apply Leave
+</Button>
         }
 
       />

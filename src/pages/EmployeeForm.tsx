@@ -47,9 +47,12 @@ export default function EmployeeForm() {
       await employeeService.create(employee);
       toast.success("Employee Added Successfully");
       navigate("/employees");
-    } catch {
-      toast.error("Failed to Add Employee");
-    }
+    } catch (err: any) {
+  console.log(err);
+  console.log(err.response);
+  console.log(err.response?.data);
+  toast.error("Failed to Add Employee");
+}
   };
 
   return (

@@ -1,9 +1,8 @@
-import { useState } from "react";
+import { useEffect, useState } from "react";
 import { useNavigate } from "react-router-dom";
 import toast from "react-hot-toast";
 import { Button } from "@/components/ui/Button";
-import { attendanceService } from "@/services";
-
+import { attendanceService, employeeService } from "@/services";
 type AttendanceStatus =
   | "Present"
   | "Late"
@@ -12,12 +11,17 @@ type AttendanceStatus =
   | "Remote";
 
 export default function AttendanceForm() {
+  const [employees, setEmployees] = useState<any[]>([]);
+  const [employeeId, setEmployeeId] = useState("");
   const [employeeName, setEmployeeName] = useState("");
   const [date, setDate] = useState("");
   const [status, setStatus] =
     useState<AttendanceStatus>("Present");
 
   const navigate = useNavigate();
+  useEffect(() => {
+    employeeService.list().then(setEmployees);
+}, []);
 
   async function saveAttendance() {
     if (!employeeName || !date) {
@@ -51,18 +55,68 @@ export default function AttendanceForm() {
       <div className="space-y-5">
 
         <div>
-          <label htmlFor="employeeName" className="block mb-2 font-medium">
-            Employee Name
-          </label>
 
-          <input
-            id="employeeName"
-            type="text"
-            className="w-full border rounded-lg p-3"
-            value={employeeName}
-            onChange={(e) => setEmployeeName(e.target.value)}
-          />
-        </div>
+<label className="block mb-2 font-medium">
+
+Employee
+
+</label>
+
+<select
+
+className="w-full border rounded-lg p-3"
+
+value={employeeId}
+
+onChange={(e)=>{
+
+const emp=employees.find(
+
+(x)=>String(x.id)===e.target.value
+
+);
+
+setEmployeeId(e.target.value);
+
+setEmployeeName(
+
+emp.firstName+" "+emp.lastName
+
+);
+
+}}
+
+>
+
+<option value="">
+
+Select Employee
+
+</option>
+
+{
+
+employees.map((emp)=>(
+
+<option
+
+key={emp.id}
+
+value={emp.id}
+
+>
+
+{emp.firstName} {emp.lastName}
+
+</option>
+
+))
+
+}
+
+</select>
+
+</div>
 
         <div>
           <label htmlFor="date" className="block mb-2 font-medium">

@@ -1,5 +1,7 @@
 import { useEffect, useState } from 'react';
 import { useParams, Link } from 'react-router-dom';
+import { Pencil, Trash2 } from "lucide-react";
+import { useNavigate } from "react-router-dom";
 import {
   Users,
   Building2,
@@ -29,6 +31,7 @@ import { ProjectCard } from '@/components/cards/ProjectCard';
 import { formatCompactCurrency, formatDate, formatNumber } from '@/utils';
 
 export default function DepartmentDetail() {
+  const navigate = useNavigate();
   const { id } = useParams<{ id: string }>();
   const [department, setDepartment] = useState<Department | null>(null);
   const [deptEmployees, setDeptEmployees] = useState<Employee[]>([]);
@@ -106,7 +109,46 @@ teamService.byDepartment(String(dept.id)),
           </>
         }
         avatar={false}
-        actions={<Button size="sm" leftIcon={<Plus size={15} />} onClick={() => toast('Add member form — coming soon')}>Add Member</Button>}
+        actions={
+  <div className="flex gap-2">
+
+    <Button
+      size="sm"
+      onClick={() => navigate(`/departments/${department.id}/edit`)}
+      leftIcon={<Pencil size={15} />}
+    >
+      Edit
+    </Button>
+
+    <Button
+      size="sm"
+      variant="danger"
+      leftIcon={<Trash2 size={15} />}
+      onClick={async () => {
+
+        if (!window.confirm("Delete this department?")) return;
+
+        try {
+
+          await departmentService.remove(String(department.id));
+
+          toast.success("Department Deleted");
+
+          navigate("/departments");
+
+        } catch {
+
+          toast.error("Delete Failed");
+
+        }
+
+      }}
+    >
+      Delete
+    </Button>
+
+  </div>
+}
       >
         <div className="mt-5 grid grid-cols-2 gap-3 sm:grid-cols-4">
           <DeptStat icon={<Users size={16} />} label="Headcount" value={formatNumber(department.employeeCount)} />
