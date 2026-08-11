@@ -67,11 +67,18 @@ export function relativeTime(date: string | Date): string {
   return rtf.format(-Math.round(diff / 31536000), 'year');
 }
 
-export function daysUntil(date: string | Date): number {
-  const d = typeof date === 'string' ? new Date(date) : date;
+export function daysUntil(date?: string | Date | null): number {
+  if (!date) return 0;
+
+  const d = typeof date === 'string' ? new Date(date) : new Date(date);
+
+  if (isNaN(d.getTime())) return 0;
+
   const now = new Date();
+
   now.setHours(0, 0, 0, 0);
   d.setHours(0, 0, 0, 0);
+
   return Math.round((d.getTime() - now.getTime()) / 86400000);
 }
 
