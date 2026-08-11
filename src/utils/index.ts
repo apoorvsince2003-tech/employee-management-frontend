@@ -36,9 +36,20 @@ export function formatPercent(value: number, decimals = 1): string {
   return `${value.toFixed(decimals)}%`;
 }
 
-export function formatDate(date: string | Date, format: 'short' | 'long' | 'iso' = 'short'): string {
+export function formatDate(
+  date: string | Date | null | undefined,
+  format: 'short' | 'long' | 'iso' = 'short'
+): string {
+  if (!date) return '—';
+
   const d = typeof date === 'string' ? new Date(date) : date;
-  if (format === 'iso') return d.toISOString().split('T')[0];
+
+  if (isNaN(d.getTime())) return '—';
+
+  if (format === 'iso') {
+    return d.toISOString().split('T')[0];
+  }
+
   if (format === 'long') {
     return d.toLocaleDateString('en-US', {
       weekday: 'long',
@@ -47,6 +58,7 @@ export function formatDate(date: string | Date, format: 'short' | 'long' | 'iso'
       day: 'numeric',
     });
   }
+
   return d.toLocaleDateString('en-US', {
     year: 'numeric',
     month: 'short',
@@ -54,16 +66,26 @@ export function formatDate(date: string | Date, format: 'short' | 'long' | 'iso'
   });
 }
 
-export function relativeTime(date: string | Date): string {
+export function relativeTime(date: string | Date | null | undefined): string {
+  if (!date) return 'Unknown time';
+
   const d = typeof date === 'string' ? new Date(date) : date;
+
+  if (isNaN(d.getTime())) return 'Unknown time';
+
   const now = new Date();
   const diff = (now.getTime() - d.getTime()) / 1000;
-  const rtf = new Intl.RelativeTimeFormat('en', { numeric: 'auto' });
+
+  const rtf = new Intl.RelativeTimeFormat('en', {
+    numeric: 'auto',
+  });
+
   if (diff < 60) return rtf.format(-Math.round(diff), 'second');
   if (diff < 3600) return rtf.format(-Math.round(diff / 60), 'minute');
   if (diff < 86400) return rtf.format(-Math.round(diff / 3600), 'hour');
   if (diff < 2592000) return rtf.format(-Math.round(diff / 86400), 'day');
   if (diff < 31536000) return rtf.format(-Math.round(diff / 2592000), 'month');
+
   return rtf.format(-Math.round(diff / 31536000), 'year');
 }
 
