@@ -95,23 +95,46 @@ export default function Profile() {
   const [editOpen, setEditOpen] = useState(false);
   const [editDraft, setEditDraft] = useState<ProfileData>(initialProfile);
   const [avatarKey, setAvatarKey] = useState(0);
-  useEffect(() => {
+  const [avatarKey, setAvatarKey] = useState(0);
+
+useEffect(() => {
   profileService
     .getProfile()
     .then((data) => {
       if (data) {
         setProfile(data);
         setEditDraft(data);
+
+        // Keep the latest profile locally as a fallback
+        localStorage.setItem("apsara_profile", JSON.stringify(data));
       } else {
-        console.log("No profile found, using default profile");
-        setProfile(initialProfile);
-        setEditDraft(initialProfile);
+        console.log("No profile found. Checking local storage...");
+
+        const savedProfile = localStorage.getItem("apsara_profile");
+
+        if (savedProfile) {
+          const parsedProfile = JSON.parse(savedProfile);
+          setProfile(parsedProfile);
+          setEditDraft(parsedProfile);
+        } else {
+          setProfile(initialProfile);
+          setEditDraft(initialProfile);
+        }
       }
     })
     .catch((error) => {
-      console.log("Profile API failed, using default profile", error);
-      setProfile(initialProfile);
-      setEditDraft(initialProfile);
+      console.log("Profile API failed. Checking local storage...", error);
+
+      const savedProfile = localStorage.getItem("apsara_profile");
+
+      if (savedProfile) {
+        const parsedProfile = JSON.parse(savedProfile);
+        setProfile(parsedProfile);
+        setEditDraft(parsedProfile);
+      } else {
+        setProfile(initialProfile);
+        setEditDraft(initialProfile);
+      }
     });
 }, []);
 
@@ -121,31 +144,63 @@ export default function Profile() {
   }
 
   async function saveEdit() {
-    console.log("Save button clicked");
-  try {
-    await profileService.updateProfile(editDraft);
+  console.log("Save button clicked");
 
-    setProfile(editDraft);
+  try {
+    let savedProfile: ProfileData | null = null;
+
+    try {
+      const response = await profileService.updateProfile(editDraft);
+
+      if (response) {
+        savedProfile = response;
+      }
+    } catch (error) {
+      console.log("Update failed, trying create...");
+    }
+
+    if (!savedProfile) {
+      try {
+        const response = await profileService.createProfile(editDraft);
+
+        if (response) {
+          savedProfile = response;
+        }
+      } catch (error) {
+        console.log("Create failed, saving locally...");
+      }
+    }
+
+    // If backend doesn't return a profile,
+    // use the edited data as the saved profile.
+    if (!savedProfile) {
+      savedProfile = editDraft;
+    }
+
+    // Update React state
+    setProfile(savedProfile);
+    setEditDraft(savedProfile);
+
+    // IMPORTANT: persist the complete profile locally
+    localStorage.setItem(
+      "apsara_profile",
+      JSON.stringify(savedProfile)
+    );
+
+    // Keep dashboard name synchronized
+    localStorage.setItem(
+      "profileName",
+      `${savedProfile.firstName} ${savedProfile.lastName}`
+    );
 
     setEditOpen(false);
 
-  } catch {
-
-    try {
-
-      await profileService.createProfile(editDraft);
-
-      setProfile(editDraft);
-
-      setEditOpen(false);
-
-    } catch {
-
-      alert("Failed to save profile");
-
-    }
-
+    console.log("Profile saved:", savedProfile);
+  } catch (error) {
+    console.error("Failed to save profile:", error);
+    alert("Failed to save profile");
   }
+}
   console.log(editDraft);
   localStorage.setItem(
   "profileName",
