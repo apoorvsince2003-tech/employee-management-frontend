@@ -99,11 +99,19 @@ export default function Profile() {
   profileService
     .getProfile()
     .then((data) => {
-      setProfile(data);
-      setEditDraft(data);
+      if (data) {
+        setProfile(data);
+        setEditDraft(data);
+      } else {
+        console.log("No profile found, using default profile");
+        setProfile(initialProfile);
+        setEditDraft(initialProfile);
+      }
     })
-    .catch(() => {
-      console.log("No profile found");
+    .catch((error) => {
+      console.log("Profile API failed, using default profile", error);
+      setProfile(initialProfile);
+      setEditDraft(initialProfile);
     });
 }, []);
 
