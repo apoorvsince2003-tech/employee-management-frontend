@@ -185,6 +185,11 @@ useEffect(() => {
       "apsara_profile",
       JSON.stringify(savedProfile)
     );
+     window.dispatchEvent(
+  new CustomEvent("apsara-profile-updated", {
+    detail: savedProfile,
+  })
+);
 
     // Keep dashboard name synchronized
     localStorage.setItem(
