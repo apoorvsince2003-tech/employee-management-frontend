@@ -95,7 +95,6 @@ export default function Profile() {
   const [editOpen, setEditOpen] = useState(false);
   const [editDraft, setEditDraft] = useState<ProfileData>(initialProfile);
   const [avatarKey, setAvatarKey] = useState(0);
-  const [avatarKey, setAvatarKey] = useState(0);
 
 useEffect(() => {
   profileService
@@ -201,13 +200,7 @@ useEffect(() => {
     alert("Failed to save profile");
   }
 }
-  console.log(editDraft);
-  localStorage.setItem(
-  "profileName",
-  `${editDraft.firstName} ${editDraft.lastName}`
-);
-console.log(localStorage.getItem("profileName"));
-}
+  
 
   function handleAvatarChange() {
     setAvatarKey((k) => k + 1);
@@ -264,7 +257,7 @@ console.log(localStorage.getItem("profileName"));
       />
     </div>
   );
-}
+
 
 function InfoRow({ icon, label, value }: { icon: React.ReactNode; label: string; value: string }) {
   return (
@@ -475,4 +468,4 @@ function Field({ label, children }: { label: string; children: React.ReactNode }
       {children}
     </label>
   );
-}
+} }
