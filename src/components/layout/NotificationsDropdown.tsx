@@ -20,12 +20,35 @@ export function NotificationsDropdown() {
 
   useEffect(() => {
     let active = true;
-    notificationService.list().then((list) => active && setItems(list));
-    notificationService.unreadCount().then((c) => active && setUnread(c));
+
+    notificationService
+      .list()
+      .then((list) => {
+        if (active) {
+          setItems(Array.isArray(list) ? list : []);
+        }
+      })
+      .catch(() => {
+        if (active) setItems([]);
+      });
+
+    notificationService
+      .unreadCount()
+      .then((c) => {
+        if (active) {
+          setUnread(typeof c === 'number' ? c : 0);
+        }
+      })
+      .catch(() => {
+        if (active) setUnread(0);
+      });
+
     return () => {
       active = false;
     };
   }, []);
+
+  const notificationList = Array.isArray(items) ? items : [];
 
   return (
     <Dropdown
@@ -50,31 +73,40 @@ export function NotificationsDropdown() {
       </div>
       <DropdownSeparator />
       <div className="max-h-96 overflow-y-auto">
-        {items.map((n) => {
-          const { icon: Icon, color } = iconMap[n.type];
-          return (
-            <Link
-              key={n.id}
-              to={n.link ?? '#'}
-              className={cn(
-                'flex gap-3 rounded-lg px-3 py-2.5 transition-colors hover:bg-[var(--bg-subtle)]',
-                !n.read && 'bg-brand-secondary/30 dark:bg-mint-600/5',
-              )}
-            >
-              <span className={cn('mt-0.5 flex h-8 w-8 shrink-0 items-center justify-center rounded-lg', color)}>
-                <Icon size={15} />
-              </span>
-              <span className="flex-1">
-                <span className="block text-sm font-medium text-[var(--text-primary)]">{n.title}</span>
-                <span className="mt-0.5 block text-xs text-[var(--text-secondary)]">{n.message}</span>
-                <span className="mt-1 block text-[10px] text-[var(--text-muted)]">
-                  {relativeTime(n.timestamp)}
+        {notificationList.length > 0 ? (
+          notificationList.map((n) => {
+            const config = iconMap[n.type] || iconMap.info;
+            const Icon = config.icon;
+            const color = config.color;
+
+            return (
+              <Link
+                key={n.id}
+                to={n.link ?? '#'}
+                className={cn(
+                  'flex gap-3 rounded-lg px-3 py-2.5 transition-colors hover:bg-[var(--bg-subtle)]',
+                  !n.read && 'bg-brand-secondary/30 dark:bg-mint-600/5',
+                )}
+              >
+                <span className={cn('mt-0.5 flex h-8 w-8 shrink-0 items-center justify-center rounded-lg', color)}>
+                  <Icon size={15} />
                 </span>
-              </span>
-              {!n.read && <span className="mt-1.5 h-2 w-2 shrink-0 rounded-full bg-brand-accent" />}
-            </Link>
-          );
-        })}
+                <span className="flex-1">
+                  <span className="block text-sm font-medium text-[var(--text-primary)]">{n.title}</span>
+                  <span className="mt-0.5 block text-xs text-[var(--text-secondary)]">{n.message}</span>
+                  <span className="mt-1 block text-[10px] text-[var(--text-muted)]">
+                    {relativeTime(n.timestamp)}
+                  </span>
+                </span>
+                {!n.read && <span className="mt-1.5 h-2 w-2 shrink-0 rounded-full bg-brand-accent" />}
+              </Link>
+            );
+          })
+        ) : (
+          <div className="px-4 py-6 text-center text-xs text-[var(--text-muted)]">
+            No notifications available
+          </div>
+        )}
       </div>
       <DropdownSeparator />
       <div className="flex items-center justify-between px-3 py-2">

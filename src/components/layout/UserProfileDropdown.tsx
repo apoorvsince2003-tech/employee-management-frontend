@@ -1,175 +1,76 @@
+import { useAuth } from '@/context/AuthContext';
 import { useNavigate } from 'react-router-dom';
-import { LogOut, Settings, User, ChevronDown, LifeBuoy, Shield } from 'lucide-react';
-import { Dropdown, DropdownItem, DropdownSeparator, DropdownLabel, Avatar } from '@/components/ui';
-import { useEffect, useState } from 'react';
-import { profileService } from '@/services';
+import { LogOut, User as UserIcon, Shield, Briefcase } from 'lucide-react';
+import { Dropdown, DropdownSeparator } from '@/components/ui/Dropdown';
 
 export function UserProfileDropdown() {
+  const { user, logout } = useAuth();
   const navigate = useNavigate();
 
-  const [name, setName] = useState('Alex Morgan');
-  const [role, setRole] = useState('HR Administrator');
+  const handleSignOut = () => {
+    logout();
+    navigate('/login', { replace: true });
+  };
 
-  useEffect(() => {
-    const loadProfile = async () => {
-      // First try the locally saved profile
-      const savedProfile = localStorage.getItem('apsara_profile');
+  const handleViewProfile = () => {
+    if (user?.role === 'ADMIN') {
+      navigate('/profile');
+    } else {
+      navigate(user?.employeeId ? `/employees/${user.employeeId}` : '/profile');
+    }
+  };
 
-      if (savedProfile) {
-        try {
-          const profile = JSON.parse(savedProfile);
-
-          if (profile?.firstName || profile?.lastName) {
-            setName(
-              `${profile.firstName || ''} ${profile.lastName || ''}`.trim()
-            );
-          }
-
-          if (profile?.designation) {
-            setRole(profile.designation);
-          }
-        } catch (error) {
-          console.error('Failed to read saved profile:', error);
-        }
-      }
-
-      // Then try backend so the latest server profile is also loaded
-      try {
-        const profile = await profileService.getProfile();
-
-        if (profile) {
-          setName(
-            `${profile.firstName || ''} ${profile.lastName || ''}`.trim()
-          );
-
-          if (profile.designation) {
-            setRole(profile.designation);
-          }
-
-          // Keep local storage synchronized
-          localStorage.setItem(
-            'apsara_profile',
-            JSON.stringify(profile)
-          );
-        }
-      } catch (error) {
-        console.log('Could not load profile from backend.');
-      }
-    };
-
-    loadProfile();
-
-    // Listen for profile changes made from the Profile page
-    const handleProfileUpdate = (event: Event) => {
-      const customEvent = event as CustomEvent;
-
-      const profile = customEvent.detail;
-
-      if (!profile) return;
-
-      if (profile.firstName || profile.lastName) {
-        setName(
-          `${profile.firstName || ''} ${profile.lastName || ''}`.trim()
-        );
-      }
-
-      if (profile.designation) {
-        setRole(profile.designation);
-      }
-    };
-
-    window.addEventListener(
-      'apsara-profile-updated',
-      handleProfileUpdate
-    );
-
-    return () => {
-      window.removeEventListener(
-        'apsara-profile-updated',
-        handleProfileUpdate
-      );
-    };
-  }, []);
+  const initial = user?.email ? user.email.charAt(0).toUpperCase() : 'U';
+  const roleName = user?.role === 'ADMIN' ? 'Administrator' : 'Staff Employee';
 
   return (
     <Dropdown
-      width={256}
+      width={240}
       trigger={
-        <button className="flex items-center gap-2.5 rounded-xl border border-[var(--border-default)] py-1.5 pl-1.5 pr-2.5 transition-all hover:border-brand-accent/40 hover:bg-[var(--bg-subtle)] focus-ring">
-          <Avatar name={name} size="sm" />
-
-          <span className="hidden text-left sm:block">
-            <span className="block text-sm font-semibold leading-tight text-[var(--text-primary)]">
-              {name}
-            </span>
-
-            <span className="block text-xs leading-tight text-[var(--text-muted)]">
-              {role}
-            </span>
-          </span>
-
-          <ChevronDown
-            size={16}
-            className="hidden text-[var(--text-muted)] sm:block"
-          />
+        <button
+          className="flex items-center gap-2.5 rounded-xl border border-[var(--border-default)] p-1.5 transition-all hover:bg-[var(--bg-subtle)] focus-ring"
+          aria-label="User profile"
+        >
+          <div className="flex h-8 w-8 items-center justify-center rounded-lg bg-teal-500/20 text-sm font-semibold text-teal-400">
+            {initial}
+          </div>
+          <div className="hidden text-left sm:block">
+            <p className="text-xs font-semibold text-[var(--text-primary)] leading-none max-w-[130px] truncate">
+              {user?.email || 'User'}
+            </p>
+            <p className="text-[10px] text-[var(--text-muted)] mt-0.5">{roleName}</p>
+          </div>
         </button>
       }
     >
-      <div className="flex items-center gap-3 px-3 py-3">
-        <Avatar name={name} size="md" />
-
-        <div className="min-w-0">
-          <p className="truncate text-sm font-semibold text-[var(--text-primary)]">
-            {name}
-          </p>
-
-          <p className="truncate text-xs text-[var(--text-muted)]">
-            {role}
-          </p>
-        </div>
+      <div className="px-3 py-2.5">
+        <p className="text-xs text-[var(--text-muted)]">Signed in as</p>
+        <p className="text-sm font-semibold text-[var(--text-primary)] truncate">{user?.email}</p>
+        <span className="mt-1 inline-flex items-center gap-1 rounded-md bg-teal-500/10 px-2 py-0.5 text-[10px] font-medium text-teal-400">
+          {user?.role === 'ADMIN' ? <Shield size={10} /> : <Briefcase size={10} />}
+          {user?.role}
+        </span>
       </div>
 
       <DropdownSeparator />
 
-      <DropdownLabel>Account</DropdownLabel>
-
-      <DropdownItem
-        icon={<User size={16} />}
-        onClick={() => navigate('/profile')}
+      <button
+        onClick={handleViewProfile}
+        className="flex w-full items-center gap-2 px-3 py-2 text-xs font-medium text-[var(--text-primary)] hover:bg-[var(--bg-subtle)] transition-colors text-left"
       >
+        <UserIcon size={14} className="text-[var(--text-secondary)]" />
         My Profile
-      </DropdownItem>
-
-      <DropdownItem
-        icon={<Settings size={16} />}
-        onClick={() => navigate('/settings')}
-      >
-        Settings
-      </DropdownItem>
-
-      <DropdownItem
-        icon={<Shield size={16} />}
-        onClick={() => navigate('/security')}
-      >
-        Security
-      </DropdownItem>
-
-      <DropdownItem
-        icon={<LifeBuoy size={16} />}
-        onClick={() => navigate('/help')}
-      >
-        Help & Support
-      </DropdownItem>
+      </button>
 
       <DropdownSeparator />
 
-      <DropdownItem
-        icon={<LogOut size={16} />}
-        danger
-        onClick={() => navigate('/dashboard')}
+      <button
+        onClick={handleSignOut}
+        className="flex w-full items-center gap-2 px-3 py-2 text-xs font-medium text-rose-500 hover:bg-rose-500/10 transition-colors text-left"
       >
+        <LogOut size={14} />
         Sign out
-      </DropdownItem>
+      </button>
     </Dropdown>
   );
 }

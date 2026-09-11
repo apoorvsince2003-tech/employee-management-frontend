@@ -50,8 +50,6 @@ import type { DepartmentDist } from '@/services/departmentService';
 import type { PayrollTrendPoint, SalaryTotals } from '@/services/salaryService';
 import type { PromotionTrendPoint } from '@/services/promotionService';
 import type { LeaveTrendPoint } from '@/services/leaveService';
-import type { AttendanceTrendPoint } from '@/services/attendanceService';
-import { EMPLOYMENT_TYPES } from '@/constants';
 import { formatCompactCurrency, relativeTime, cn } from '@/utils';
 import type { Holiday, Activity, Notification } from '@/types';
 
@@ -73,13 +71,6 @@ interface DashboardData {
   activities: Activity[];
 }
 
-const employmentTypeOrder = [
-  EMPLOYMENT_TYPES.FULL_TIME,
-  EMPLOYMENT_TYPES.PART_TIME,
-  EMPLOYMENT_TYPES.CONTRACT,
-  EMPLOYMENT_TYPES.INTERN,
-];
-
 export default function Dashboard() {
   const [data, setData] = useState<DashboardData | null>(null);
   const [error, setError] = useState<string | null>(null);
@@ -91,47 +82,72 @@ export default function Dashboard() {
     setLoading(true);
     setError(null);
     Promise.all([
-      employeeService.stats(),
-      employeeService.employmentDist(),
-      projectService.activeCount(),
-      leaveService.pendingCount(),
-      leaveService.onLeaveCount(),
-      departmentService.distribution(),
-      salaryService.trend(),
-      promotionService.trend(),
-      leaveService.trend(),
-      attendanceService.trend(),
-      salaryService.totals(),
-      holidayService.upcoming(5),
-      activityService.recent(8),
+      employeeService.stats().catch(() => ({ total: 0, active: 0, newJoiners: 0, onLeave: 0 })),
+      employeeService.employmentDist().catch(() => []),
+      projectService.activeCount().catch(() => 0),
+      leaveService.pendingCount().catch(() => 0),
+      leaveService.onLeaveCount().catch(() => 0),
+      departmentService.distribution().catch(() => []),
+      salaryService.trend().catch(() => []),
+      promotionService.trend().catch(() => []),
+      leaveService.trend().catch(() => []),
+      attendanceService.trend().catch(() => []),
+      salaryService.totals().catch(() => ({ monthlyPayroll: 0, headcount: 0, averageSalary: 0, bonusPool: 0 })),
+      holidayService.upcoming(5).catch(() => []),
+      activityService.recent(8).catch(() => []),
     ])
       .then(
         ([
-          stats,
-          employmentDist,
+          rawStats,
+          rawEmploymentDist,
           activeProjects,
           pendingLeaves,
           onLeaveCount,
-          departmentDist,
-          payroll,
-          promotions,
-          leaveTrend,
-          attendanceTrend,
-          salaryTotals,
-          holidays,
-          activities,
+          rawDepartmentDist,
+          rawPayroll,
+          rawPromotions,
+          rawLeaveTrend,
+          rawAttendanceTrend,
+          rawSalaryTotals,
+          rawHolidays,
+          rawActivities,
         ]) => {
           if (!active) return;
-          const totalHead = departmentDist.reduce((s, d) => s + d.value, 0);
+
+          const departmentDist = Array.isArray(rawDepartmentDist) ? rawDepartmentDist : [];
+          const employmentDist = Array.isArray(rawEmploymentDist) ? rawEmploymentDist : [];
+          const payroll = Array.isArray(rawPayroll) ? rawPayroll : [];
+          const promotions = Array.isArray(rawPromotions) ? rawPromotions : [];
+          const leaveTrend = Array.isArray(rawLeaveTrend) ? rawLeaveTrend : [];
+          const attendanceTrend = Array.isArray(rawAttendanceTrend) ? rawAttendanceTrend : [];
+          const holidays = Array.isArray(rawHolidays) ? rawHolidays : [];
+          const activities = Array.isArray(rawActivities) ? rawActivities : [];
+
+          const stats: EmployeeStats = {
+            total: rawStats?.total ?? 0,
+            active: rawStats?.active ?? 0,
+            newJoiners: rawStats?.newJoiners ?? 0,
+            onLeave: rawStats?.onLeave ?? 0,
+          };
+
+          const salaryTotals: SalaryTotals = {
+            monthlyPayroll: rawSalaryTotals?.monthlyPayroll ?? 0,
+            headcount: rawSalaryTotals?.headcount ?? 0,
+            averageSalary: rawSalaryTotals?.averageSalary ?? 0,
+            bonusPool: rawSalaryTotals?.bonusPool ?? 0,
+          };
+
+          const totalHead = departmentDist.reduce((s, d) => s + (d?.value || 0), 0);
           const attendanceRate =
-            attendanceTrend.length > 0
+            attendanceTrend.length > 0 && attendanceTrend[attendanceTrend.length - 1]?.rate
               ? attendanceTrend[attendanceTrend.length - 1].rate
               : 0;
+
           setData({
             stats,
-            activeProjects,
-            pendingLeaves,
-            onLeaveCount,
+            activeProjects: typeof activeProjects === 'number' ? activeProjects : 0,
+            pendingLeaves: typeof pendingLeaves === 'number' ? pendingLeaves : 0,
+            onLeaveCount: typeof onLeaveCount === 'number' ? onLeaveCount : 0,
             departmentDist,
             employmentDist,
             payroll,
@@ -143,7 +159,6 @@ export default function Dashboard() {
             totalHead,
             holidays,
             activities,
-           
           });
           setLoading(false);
         },
@@ -158,7 +173,9 @@ export default function Dashboard() {
     };
   }
 
-  useEffect(() => load(), []);
+  useEffect(() => {
+    load();
+  }, []);
 
   if (loading) return <LoadingState label="Loading dashboard…" />;
   if (error || !data)
@@ -170,63 +187,54 @@ export default function Dashboard() {
       />
     );
 
+  const activePercent = data.stats.total > 0 ? Math.round((data.stats.active / data.stats.total) * 100) : 0;
+  const presentCount = Math.max(0, data.stats.active - data.onLeaveCount);
+
   return (
     <div className="space-y-6">
       <WelcomeBanner />
+
       {/* Quick Actions */}
-
-<Card>
-
-  <CardHeader
-    title="Quick Actions"
-    subtitle="Frequently used shortcuts"
-  />
-
-  <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-5 gap-4 mt-4">
-
-    <button
-      onClick={() => navigate("/employees/new")}
-      className="rounded-xl border p-5 hover:shadow-lg hover:-translate-y-1 transition-all"
-    >
-      <Plus className="mx-auto text-blue-600 mb-2" size={28} />
-      <p className="font-semibold">Add Employee</p>
-    </button>
-
-    <button
-      onClick={() => navigate("/departments")}
-      className="rounded-xl border p-5 hover:shadow-lg hover:-translate-y-1 transition-all"
-    >
-      <Building className="mx-auto text-green-600 mb-2" size={28} />
-      <p className="font-semibold">Departments</p>
-    </button>
-
-    <button
-      onClick={() => navigate("/teams/new")}
-      className="rounded-xl border p-5 hover:shadow-lg hover:-translate-y-1 transition-all"
-    >
-      <Users className="mx-auto text-purple-600 mb-2" size={28} />
-      <p className="font-semibold">Add Team</p>
-    </button>
-
-    <button
-      onClick={() => navigate("/projects/new")}
-      className="rounded-xl border p-5 hover:shadow-lg hover:-translate-y-1 transition-all"
-    >
-      <FolderKanban className="mx-auto text-orange-600 mb-2" size={28} />
-      <p className="font-semibold">New Project</p>
-    </button>
-
-    <button
-      onClick={() => navigate("/notices/new")}
-      className="rounded-xl border p-5 hover:shadow-lg hover:-translate-y-1 transition-all"
-    >
-      <Bell className="mx-auto text-red-600 mb-2" size={28} />
-      <p className="font-semibold">New Notice</p>
-    </button>
-
-  </div>
-
-</Card>
+      <Card>
+        <CardHeader title="Quick Actions" subtitle="Frequently used shortcuts" />
+        <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-5 gap-4 mt-4">
+          <button
+            onClick={() => navigate('/employees/new')}
+            className="rounded-xl border p-5 hover:shadow-lg hover:-translate-y-1 transition-all"
+          >
+            <Plus className="mx-auto text-blue-600 mb-2" size={28} />
+            <p className="font-semibold">Add Employee</p>
+          </button>
+          <button
+            onClick={() => navigate('/departments')}
+            className="rounded-xl border p-5 hover:shadow-lg hover:-translate-y-1 transition-all"
+          >
+            <Building className="mx-auto text-green-600 mb-2" size={28} />
+            <p className="font-semibold">Departments</p>
+          </button>
+          <button
+            onClick={() => navigate('/teams/new')}
+            className="rounded-xl border p-5 hover:shadow-lg hover:-translate-y-1 transition-all"
+          >
+            <Users className="mx-auto text-purple-600 mb-2" size={28} />
+            <p className="font-semibold">Add Team</p>
+          </button>
+          <button
+            onClick={() => navigate('/projects/new')}
+            className="rounded-xl border p-5 hover:shadow-lg hover:-translate-y-1 transition-all"
+          >
+            <FolderKanban className="mx-auto text-orange-600 mb-2" size={28} />
+            <p className="font-semibold">New Project</p>
+          </button>
+          <button
+            onClick={() => navigate('/notices/new')}
+            className="rounded-xl border p-5 hover:shadow-lg hover:-translate-y-1 transition-all"
+          >
+            <Bell className="mx-auto text-red-600 mb-2" size={28} />
+            <p className="font-semibold">New Notice</p>
+          </button>
+        </div>
+      </Card>
 
       {/* Summary stat cards */}
       <div className="grid grid-cols-1 gap-4 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-6">
@@ -245,7 +253,7 @@ export default function Dashboard() {
           icon={<UserCheck size={20} />}
           label="Active Employees"
           value={data.stats.active}
-          supportingText={`${Math.round((data.stats.active / data.stats.total) * 100)}% of workforce`}
+          supportingText={`${activePercent}% of workforce`}
           trend={{ value: '1.8%', direction: 'up' }}
           accentColor="#12B76A"
           to="/employees"
@@ -346,14 +354,13 @@ export default function Dashboard() {
         </ChartCard>
       </div>
 
-      {/* Bottom row: activities, holidays, attendance, notifications */}
+      {/* Bottom row */}
       <div className="grid grid-cols-1 gap-4 lg:grid-cols-3">
         <RecentActivities activities={data.activities} />
 
         <div className="space-y-4">
           <UpcomingHolidays holidays={data.holidays} />
 
-          {/* Attendance radial */}
           <Card>
             <CardHeader
               title={
@@ -374,17 +381,14 @@ export default function Dashboard() {
               </div>
             </div>
             <div className="mt-4 grid grid-cols-3 gap-2 text-center">
-              <MiniStat label="Present" value={data.stats.active - data.onLeaveCount} tone="success" />
+              <MiniStat label="Present" value={presentCount} tone="success" />
               <MiniStat label="Remote" value={Math.round(data.stats.total * 0.22)} tone="info" />
-              <MiniStat label="Late" value={4} tone="warning" />
+              <MiniStat label="Late" value={0} tone="warning" />
             </div>
           </Card>
         </div>
 
-        {/* Notifications + salary snapshot */}
         <div className="space-y-4">
-          
-
           <Card>
             <CardHeader
               title={
@@ -432,62 +436,5 @@ function SnapshotRow({ icon, label, value }: { icon: React.ReactNode; label: str
       </dt>
       <dd className="text-sm font-semibold text-[var(--text-primary)]">{value}</dd>
     </div>
-  );
-}
-
-const notifIcons = {
-  info: Info,
-  success: CheckCircle2,
-  warning: AlertTriangle,
-  error: AlertTriangle,
-} as const;
-
-function NotificationsSummary({ notifications }: { notifications: Notification[] }) {
-  const items = notifications.slice(0, 4);
-  const navigate = useNavigate();
-  return (
-    <Card>
-      <CardHeader
-        title={
-          <button onClick={() => navigate('/notices')} className="group/title inline-flex items-center gap-1.5 text-left">
-            <span className="text-base font-semibold text-[var(--text-primary)] transition-colors group-hover/title:text-brand-accent">Notifications</span>
-            <ArrowUpRight size={15} className="shrink-0 text-[var(--text-muted)] opacity-0 transition-all group-hover/title:translate-x-0.5 group-hover/title:opacity-100" />
-          </button>
-        }
-        subtitle="Recent alerts and updates"
-        action={
-          <span className="inline-flex h-6 min-w-6 items-center justify-center rounded-full bg-error-500 px-1.5 text-[11px] font-bold text-white">
-            {notifications.filter((n) => !n.read).length}
-          </span>
-        }
-      />
-      <ul className="mt-3 space-y-1">
-        {items.map((n) => {
-          const Icon = notifIcons[n.type];
-          const tone =
-            n.type === 'success'
-              ? 'text-success-500'
-              : n.type === 'warning'
-                ? 'text-warning-500'
-                : n.type === 'error'
-                  ? 'text-error-500'
-                  : 'text-sky-500';
-          return (
-            <motion.li
-              key={n.id}
-              onClick={() => n.link && navigate(n.link)}
-              className={cn('flex cursor-pointer items-start gap-2.5 rounded-xl px-2 py-2 transition-colors hover:bg-[var(--bg-subtle)]')}
-            >
-              <Icon size={16} className={`mt-0.5 shrink-0 ${tone}`} />
-              <div className="min-w-0 flex-1">
-                <p className="text-sm font-medium leading-tight text-[var(--text-primary)]">{n.title}</p>
-                <p className="mt-0.5 text-xs text-[var(--text-muted)]">{relativeTime(n.timestamp)}</p>
-              </div>
-              {!n.read && <Bell size={13} className="mt-1 shrink-0 text-brand-accent" />}
-            </motion.li>
-          );
-        })}
-      </ul>
-    </Card>
   );
 }

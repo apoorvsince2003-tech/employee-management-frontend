@@ -1,8 +1,8 @@
 import axios, { AxiosError, type AxiosInstance } from 'axios';
 
-export const API_BASE_URL =
-import.meta.env.VITE_API_BASE_URL ?? 'http://localhost:8082/api';
-console.log("API URL =", import.meta.env.VITE_API_BASE_URL);
+// Ensure baseURL always ends with '/api' and clean trailing slashes
+const rawBaseUrl = import.meta.env.VITE_API_BASE_URL || 'http://localhost:8080/api';
+export const API_BASE_URL = rawBaseUrl.endsWith('/api') ? rawBaseUrl : `${rawBaseUrl.replace(/\/+$/, '')}/api`;
 
 export interface ApiResponse<T> {
   data: T;
@@ -32,20 +32,21 @@ export function setAuthToken(token: string | null): void {
     if (token) localStorage.setItem(TOKEN_KEY, token);
     else localStorage.removeItem(TOKEN_KEY);
   } catch {
-    // ignore storage errors (e.g. privacy mode)
+    // ignore storage errors
   }
 }
 
-// Centralized Axios instance. Every service method goes through this client
-// so request/response concerns (base URL, auth header, error normalization)
-// are handled in one place.
 const instance: AxiosInstance = axios.create({
   baseURL: API_BASE_URL,
   timeout: 15000,
   headers: { 'Content-Type': 'application/json' },
 });
 
-// Attach auth token to every outgoing request.
+// Clean path helper so leading slash doesn't override baseURL /api prefix
+function formatPath(path: string): string {
+  return path.startsWith('/') ? path.slice(1) : path;
+}
+
 instance.interceptors.request.use((config) => {
   const token = getAuthToken();
   if (token) {
@@ -54,7 +55,6 @@ instance.interceptors.request.use((config) => {
   return config;
 });
 
-// Normalize errors into a single ApiError shape and surface a readable message.
 instance.interceptors.response.use(
   (response) => response,
   (error: AxiosError<{ message?: string }>) => {
@@ -64,7 +64,6 @@ instance.interceptors.response.use(
       error.message ??
       'Something went wrong. Please try again.';
 
-    // Clear auth token on 401 so the UI can redirect to sign-in.
     if (status === 401) {
       setAuthToken(null);
     }
@@ -82,35 +81,34 @@ export class ApiError extends Error {
   }
 }
 
-// Thin wrappers so services stay decoupled from axios specifics. Each returns
-// the unwrapped `data` payload (the ApiResponse body) directly.
 export const apiClient = {
   async get<T>(path: string, params?: Record<string, unknown>): Promise<T> {
-  const res = await instance.get(path, { params });
-
-  console.log("API PATH:", path);
-  console.log("API RESPONSE:", res.data);
-
-  return res.data;
-},
+    const cleanPath = formatPath(path);
+    const res = await instance.get(cleanPath, { params });
+    return res.data;
+  },
 
   async getRaw<T>(path: string, params?: Record<string, unknown>): Promise<T> {
-    const res = await instance.get<T>(path, { params });
+    const cleanPath = formatPath(path);
+    const res = await instance.get<T>(cleanPath, { params });
     return res.data;
   },
 
   async post<T>(path: string, body?: unknown): Promise<T> {
-  const res = await instance.post<T>(path, body);
-  return res.data;
-},
+    const cleanPath = formatPath(path);
+    const res = await instance.post<T>(cleanPath, body);
+    return res.data;
+  },
 
- async put<T>(path: string, body?: unknown): Promise<T> {
-  const res = await instance.put<T>(path, body);
-  return res.data;
-},
+  async put<T>(path: string, body?: unknown): Promise<T> {
+    const cleanPath = formatPath(path);
+    const res = await instance.put<T>(cleanPath, body);
+    return res.data;
+  },
 
   async delete<T>(path: string): Promise<T> {
-  const res = await instance.delete<T>(path);
-  return res.data;
-},
+    const cleanPath = formatPath(path);
+    const res = await instance.delete<T>(cleanPath);
+    return res.data;
+  },
 };

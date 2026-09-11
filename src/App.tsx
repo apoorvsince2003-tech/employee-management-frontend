@@ -2,6 +2,7 @@ import { BrowserRouter, useRoutes } from 'react-router-dom';
 import { Toaster } from 'react-hot-toast';
 import { ThemeProvider, useTheme } from '@/context/ThemeContext';
 import { SidebarProvider } from '@/context/SidebarContext';
+import { AuthProvider } from '@/context/AuthContext';
 import { routes } from '@/routes';
 
 function AppRoutes() {
@@ -47,13 +48,15 @@ function ThemedToast() {
 
 export default function App() {
   return (
-    <ThemeProvider>
-      <SidebarProvider>
-        <BrowserRouter>
-          <AppRoutes />
-          <ThemedToast />
-        </BrowserRouter>
-      </SidebarProvider>
-    </ThemeProvider>
+    <AuthProvider>
+      <ThemeProvider>
+        <SidebarProvider>
+          <BrowserRouter>
+            <AppRoutes />
+            <ThemedToast />
+          </BrowserRouter>
+        </SidebarProvider>
+      </ThemeProvider>
+    </AuthProvider>
   );
 }

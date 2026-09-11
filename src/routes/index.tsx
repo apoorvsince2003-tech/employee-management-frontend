@@ -3,21 +3,9 @@ import { Navigate } from 'react-router-dom';
 import type { RouteObject } from 'react-router-dom';
 import { AppLayout } from '@/layouts/AppLayout';
 import { LoadingState } from '@/components/ui';
-import {
-  Users,
-  Building2,
-  UsersRound,
-  FolderKanban,
-  Wallet,
-  TrendingUp,
-  CalendarCheck,
-  CalendarDays,
-  PartyPopper,
-  Megaphone,
-  BarChart3,
-  LifeBuoy,
-} from 'lucide-react';
+import { useAuth } from '@/context/AuthContext';
 
+const Login = lazy(() => import('@/pages/Login'));
 const TeamForm = lazy(() => import('@/pages/TeamForm'));
 const EditTeam = lazy(() => import('@/pages/EditTeam'));
 const ProjectForm = lazy(() => import('@/pages/ProjectForm'));
@@ -44,25 +32,37 @@ const Security = lazy(() => import('@/pages/Security'));
 const HelpSupport = lazy(() => import("@/pages/HelpSupport"));
 const DepartmentForm = lazy(() => import('@/pages/DepartmentForm'));
 const LeaveForm = lazy(() => import('@/pages/LeaveForm'));
-
-function withSuspense(node: React.ReactNode, label = 'Loading…') {
-  return <Suspense fallback={<LoadingState label={label} />}>{node}</Suspense>;
-}
-
 const Attendance = lazy(() => import("@/pages/Attendance"));
 const AttendanceForm = lazy(() => import('@/pages/AttendanceForm'));
-
 const NoticeBoard = lazy(() => import('@/pages/NoticeBoard'));
 const NoticeForm = lazy(() => import('@/pages/NoticeForm'));
 const EditNotice = lazy(() => import('@/pages/EditNotice'));
 const Reports = lazy(() => import("@/pages/Reports"));
 
-  
+function withSuspense(node: React.ReactNode, label = 'Loading…') {
+  return <Suspense fallback={<LoadingState label={label} />}>{node}</Suspense>;
+}
+
+function ProtectedRoute({ children }: { children: React.ReactNode }) {
+  const { isAuthenticated } = useAuth();
+  if (!isAuthenticated) {
+    return <Navigate to="/login" replace />;
+  }
+  return <>{children}</>;
+}
 
 export const routes: RouteObject[] = [
   {
+    path: '/login',
+    element: withSuspense(<Login />, 'Loading login…'),
+  },
+  {
     path: '/',
-    element: <AppLayout />,
+    element: (
+      <ProtectedRoute>
+        <AppLayout />
+      </ProtectedRoute>
+    ),
     children: [
       { index: true, element: <Navigate to="/dashboard" replace /> },
       { path: 'dashboard', element: withSuspense(<Dashboard />, 'Loading dashboard…') },
@@ -91,24 +91,24 @@ export const routes: RouteObject[] = [
 
       { path: 'attendance', element: withSuspense(<Attendance />, 'Loading...') },
       { path: 'attendance/new', element: withSuspense(<AttendanceForm />, 'Loading attendance form...') },
-      { path: "attendance/:id/edit", element: withSuspense(<EditAttendance />, "Loading Attendance..." ),},
+      { path: 'attendance/:id/edit', element: withSuspense(<EditAttendance />, 'Loading Attendance...') },
 
       { path: 'leaves', element: withSuspense(<LeaveManagement />, 'Loading leaves...') },
       { path: 'leaves/new', element: withSuspense(<LeaveForm />, 'Loading leave form...') },
-     
+
       { path: 'holidays', element: withSuspense(<Holidays />, 'Loading holidays...') },
-      { path: 'holidays/new', element: withSuspense( <HolidayForm />, 'Loading Holiday Form...' ),},
-      { path: 'holidays/edit/:id', element: withSuspense( <EditHoliday />, 'Loading Holiday...' ) },
+      { path: 'holidays/new', element: withSuspense(<HolidayForm />, 'Loading Holiday Form...') },
+      { path: 'holidays/edit/:id', element: withSuspense(<EditHoliday />, 'Loading Holiday...') },
 
       { path: 'notices', element: withSuspense(<NoticeBoard />, 'Loading notices...') },
       { path: 'notices/new', element: withSuspense(<NoticeForm />, 'Loading notice form...') },
       { path: 'notices/edit/:id', element: withSuspense(<EditNotice />, 'Loading notice...') },
 
-      { path: "reports", element: withSuspense(<Reports />, "Loading reports..."),},
+      { path: 'reports', element: withSuspense(<Reports />, 'Loading reports...') },
       { path: 'settings', element: withSuspense(<Settings />, 'Loading settings…') },
       { path: 'profile', element: withSuspense(<Profile />, 'Loading profile…') },
       { path: 'security', element: withSuspense(<Security />, 'Loading security…') },
-      { path: "help", element: withSuspense(<HelpSupport />, "Loading Help...") },
+      { path: 'help', element: withSuspense(<HelpSupport />, 'Loading Help...') },
       { path: '*', element: <Navigate to="/dashboard" replace /> },
     ],
   },
